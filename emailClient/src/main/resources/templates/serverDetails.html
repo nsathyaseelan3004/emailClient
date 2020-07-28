@@ -1,0 +1,156 @@
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <title>Getting Started: Handling Form Submission</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+    <!-- <form action="#" th:action="@{/emailDetails}" th:object="${greeting}" method="post"> -->
+    <div class="container-fluid" style="margin-top:30px;">
+    	<div class="card" style="background-color: aliceblue;">
+			<div class="card-header">
+			User Information
+			</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-lg-4">
+						<p>Username: <input class="form-control" style="width:250px" type="text" id="username"/></p>
+				        <p>Password: <input class="form-control" style="width:250px" type="password" id="password"/></p>
+				     </div>
+				     <div class="col-lg-4">
+				     	<p>IMAP Server: <input class="form-control" style="width:250px" type="text" id="imapserver"/></p>
+				        <p>Port: <input class="form-control" style="width:250px" type="text" id="port"/></p>
+					 </div>
+				     <div class="col-lg-4">
+				        <p>Protocol: <input class="form-control" style="width:250px" type="text" id="protocol"/></p>
+				        <p>No.of Emails: <input class="form-control" style="width:250px" type="text" id="noEmails"/></p>
+					</div>
+				</div>
+			</div>
+			<div class="card-footer">
+				<button class="btn-primary" style="width:250px" type="submit" value="Submit" onclick="getEmailDetails();">Submit</button>
+			</div>
+		</div>
+		<div class="row">
+			&nbsp;
+		</div>
+		<div class="row" id="processingDiv">
+			<div class="col-lg-5"></div>
+			<div class="col-lg-4"><p><b>Processsing... Please wait...</b></p></div>
+			<div class="col-lg-3"></div>
+		</div>
+		<div id="tableDiv">
+			<table class="table" id="emailTable">
+				<thead>
+					<tr>
+						<th>From</th>
+						<th>To</th>
+						<th>Subject</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody id="emailTableBody">
+				</tbody>
+			</table>
+		</div>
+		<div class="modal" tabindex="-1" role="dialog" id="myModal">
+		  <div class="modal-dialog modal-lg" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title">Email Message</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body" id="messageDiv">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		<!-- <div class="modal" id="myModal" style="width:1500px;">
+	        <div class="modal-header">
+	          <button type="button" class="close" data-dismiss="modal">&times;</button>
+	          <h4 class="modal-title">Email Message</h4>
+	        </div>
+	        <div class="modal-body" id="messageDiv">
+	        </div>
+		 </div> -->
+    </div>
+    <!-- </form> -->
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.4.0/bootbox.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function(){
+		$("#tableDiv").hide();
+		$("#processingDiv").hide();
+	});
+	
+	$("table#emailTable tbody").on("click", "tr td a", function (event) {
+		var message = $(this).attr("message");
+		if(message != null && message != ''){
+			alert(message);
+			$(this).attr('style', 'color:black');
+		}else{
+			alert("No readable message!!");
+		}
+		/*$('#myModal').modal('show')
+	    $("#messageDiv").html("<p>"+$(this).attr("message")+"</p>");)*/
+	});
+	
+	function getEmailDetails() {
+		$("#tableDiv").hide();
+		var userName = $("#username").val();
+		var password = $("#password").val();
+		var imapserver = $("#imapserver").val();
+		var port = $("#port").val();
+		var protocol = $("#protocol").val();
+		var noEmails = $("#noEmails").val();
+		var isErrorExists = false;
+		if(userName == '' || password == '' || imapserver == '' || port == '' || protocol == ''){
+			alert("All fields are mandatory!!");
+			isErrorExists = true;
+		}
+		if(noEmails == '' || noEmails <= 0){
+			alert("Please input a number > 0!!");
+			isErrorExists = true;
+		}
+		if(!isErrorExists){
+			$("#processingDiv").show();
+			var inputData = "{\"userName\":\""+userName+"\",\"password\":\""+password+"\",\"server\":\""+imapserver+"\",\"port\":\""+port+"\",\"protocol\":\""+protocol+"\",\"noEmails\":\""+noEmails+"\"}";
+			$.ajax({
+			    url: '/emailDetails',
+			    type: 'post',
+			    dataType: 'JSON',
+			    data: inputData,
+			    contentType: "application/json; charset=utf-8",
+			    success: function(response){
+			    	if(response.length >= 1){
+			    		if(response[0].statusCode == 0){
+			    			$("#tableDiv").show();
+				    		$("#processingDiv").hide();
+					        var len = response.length;
+					        var tableStr = "";
+					        for(var i = 0; i < len; i++){
+					        	tableStr += "<tr>";
+					        	tableStr += "<td>"+response[i].from+"</td>";
+					        	tableStr += "<td>"+response[i].to+"</td>";
+					        	tableStr += "<td>"+response[i].subject+"</td>";
+					        	tableStr += "<td><a href=\"javascript:void(0);\" message=\""+response[i].message+"\">Click to View Message</a></td>";
+					        	tableStr +="</tr>";
+					        }
+					        $("#emailTableBody").html(tableStr);
+			    		}else{
+			    			$("#processingDiv").hide();
+				    		bootbox.alert(response[0].statusMessage);
+			    		}
+			    	}
+				}
+			});
+		}
+	}
+</script>
+</body>
+</html>
